@@ -1,0 +1,4 @@
+json=com.andrew.goodrpc.serializer.JsonSerializer
+kryo=com.andrew.goodrpc.serializer.KryoSerializer
+jdk=com.andrew.goodrpc.serializer.JdkSerializer
+hessian=com.andrew.goodrpc.serializer.HessianSerializer

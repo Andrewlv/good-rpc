@@ -1,5 +1,6 @@
 package com.andrew.goodrpc.config;
 
+import com.andrew.goodrpc.serializer.SerializerKeys;
 import lombok.Data;
 
 /**
@@ -32,5 +33,15 @@ public class RpcConfig {
      * 模拟mock调用
      */
     private boolean mock = false;
+
+    /**
+     * 序列化器
+     */
+    private String serializer = SerializerKeys.JDK;
+
+    /**
+     * 注册中心配置
+     */
+    private RegistryConfig registryConfig = new RegistryConfig();
 
 }

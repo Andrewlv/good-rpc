@@ -1,8 +1,12 @@
 package com.andrew.goodrpc.model;
 
+import cn.hutool.core.util.StrUtil;
+import lombok.Data;
+
 /**
  * 服务元信息（服务注册信息）
  */
+@Data
 public class ServiceMetaInfo {
 
     /**
@@ -41,5 +45,12 @@ public class ServiceMetaInfo {
 
     public String getServiceNodeKey() {
         return String.format("%s/%s:%s", getServiceKey(), serviceHost, servicePort);
+    }
+
+    public String getServiceAddress() {
+        if (!StrUtil.contains(serviceHost, "http")) {
+            return String.format("http://%s:%s", serviceHost, servicePort);
+        }
+        return String.format("%s:%s", serviceHost, servicePort);
     }
 }

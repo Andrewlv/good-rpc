@@ -13,7 +13,7 @@ public interface ProtocolConstant {
     /**
      * 协议魔数
      */
-    int PROTOCOL_MAGIC = 0x1;
+    byte PROTOCOL_MAGIC = 0x1;
 
     /**
      * 协议版本号

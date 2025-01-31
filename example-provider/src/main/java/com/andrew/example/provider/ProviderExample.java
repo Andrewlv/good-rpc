@@ -10,7 +10,7 @@ import com.andrew.goodrpc.registry.LocalRegistry;
 import com.andrew.goodrpc.registry.Registry;
 import com.andrew.goodrpc.registry.RegistryFactory;
 import com.andrew.goodrpc.server.HttpServer;
-import com.andrew.goodrpc.server.VertxHttpServer;
+import com.andrew.goodrpc.server.tcp.VertxTcpServer;
 
 /**
  * 服务提供者示例
@@ -40,7 +40,7 @@ public class ProviderExample {
         }
 
         // 启动 web 服务
-        HttpServer httpServer = new VertxHttpServer();
-        httpServer.doStart(RpcApplication.getRpcConfig().getServerPort());
+        HttpServer vertxTcpServer = new VertxTcpServer();
+        vertxTcpServer.doStart(RpcApplication.getRpcConfig().getServerPort());
     }
 }

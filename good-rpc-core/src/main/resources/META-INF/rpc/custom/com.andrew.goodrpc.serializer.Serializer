@@ -1,2 +1,2 @@
-jdk=com.yupi.yurpc.serializer.JdkSerializer
-hessian=com.yupi.yurpc.serializer.HessianSerializer
+jdk=com.andrew.goodrpc.serializer.JdkSerializer
+hessian=com.andrew.goodrpc.serializer.HessianSerializer

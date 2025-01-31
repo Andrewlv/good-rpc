@@ -1,23 +1,29 @@
 package com.andrew.goodrpc.proxy;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
+import cn.hutool.core.util.IdUtil;
 import com.andrew.goodrpc.RpcApplication;
 import com.andrew.goodrpc.config.RpcConfig;
 import com.andrew.goodrpc.constant.RpcConstant;
 import com.andrew.goodrpc.model.RpcRequest;
 import com.andrew.goodrpc.model.RpcResponse;
 import com.andrew.goodrpc.model.ServiceMetaInfo;
+import com.andrew.goodrpc.protocol.*;
 import com.andrew.goodrpc.registry.Registry;
 import com.andrew.goodrpc.registry.RegistryFactory;
 import com.andrew.goodrpc.serializer.Serializer;
 import com.andrew.goodrpc.serializer.SerializerFactory;
+import com.andrew.goodrpc.server.tcp.VertxTcpClient;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.NetClient;
+import io.vertx.core.net.NetSocket;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 服务代理（JDK动态代理）
@@ -57,32 +63,23 @@ public class ServiceProxy implements InvocationHandler {
                 .parameters(args)
                 .build();
 
-        // 序列化
-        byte[] bodyBytes = serializer.serialize(rpcRequest);
-
-        // 从注册中心获取服务提供者请求地址
-        RpcConfig rpcConfig = RpcApplication.getRpcConfig();
-        Registry registry = RegistryFactory.getInstance(rpcConfig.getRegistryConfig().getRegistry());
-        ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
-        serviceMetaInfo.setServiceName(serviceName);
-        serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
-        List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
-        if (CollUtil.isEmpty(serviceMetaInfoList)) {
-            throw new RuntimeException("未找到服务提供者");
-        }
-        ServiceMetaInfo selectedService = serviceMetaInfoList.get(0);
-
-        // 发送请求
-        try (HttpResponse httpResponse = HttpRequest.post(selectedService.getServiceAddress())
-                .body(bodyBytes)
-                .execute()) {
-            byte[] result = httpResponse.bodyBytes();
-            // 反序列化
-            RpcResponse rpcResponse = serializer.deserialize(result, RpcResponse.class);
+        try {
+            // 从注册中心获取服务提供者请求地址
+            RpcConfig rpcConfig = RpcApplication.getRpcConfig();
+            Registry registry = RegistryFactory.getInstance(rpcConfig.getRegistryConfig().getRegistry());
+            ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
+            serviceMetaInfo.setServiceName(serviceName);
+            serviceMetaInfo.setServiceVersion(RpcConstant.DEFAULT_SERVICE_VERSION);
+            List<ServiceMetaInfo> serviceMetaInfoList = registry.serviceDiscovery(serviceMetaInfo.getServiceKey());
+            if (CollUtil.isEmpty(serviceMetaInfoList)) {
+                throw new RuntimeException("未找到服务提供者");
+            }
+            ServiceMetaInfo selectedService = serviceMetaInfoList.get(0);
+            // 发送 TCP 请求
+            RpcResponse rpcResponse = VertxTcpClient.doRequest(rpcRequest, selectedService);
             return rpcResponse.getData();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException("调用失败");
         }
-        return null;
     }
 }

@@ -49,6 +49,11 @@ public class ProtocolMessage<T> {
         private byte type;
 
         /**
+         * 状态
+         */
+        private byte status;
+
+        /**
          * 请求id
          */
         private long requestId;

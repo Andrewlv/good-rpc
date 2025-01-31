@@ -1,29 +1,25 @@
 package com.andrew.goodrpc.proxy;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.IdUtil;
 import com.andrew.goodrpc.RpcApplication;
 import com.andrew.goodrpc.config.RpcConfig;
 import com.andrew.goodrpc.constant.RpcConstant;
+import com.andrew.goodrpc.loadbalancer.LoadBalancer;
+import com.andrew.goodrpc.loadbalancer.LoadBalancerFactory;
 import com.andrew.goodrpc.model.RpcRequest;
 import com.andrew.goodrpc.model.RpcResponse;
 import com.andrew.goodrpc.model.ServiceMetaInfo;
-import com.andrew.goodrpc.protocol.*;
 import com.andrew.goodrpc.registry.Registry;
 import com.andrew.goodrpc.registry.RegistryFactory;
 import com.andrew.goodrpc.serializer.Serializer;
 import com.andrew.goodrpc.serializer.SerializerFactory;
 import com.andrew.goodrpc.server.tcp.VertxTcpClient;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.NetClient;
-import io.vertx.core.net.NetSocket;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 
 /**
  * 服务代理（JDK动态代理）
@@ -74,7 +70,13 @@ public class ServiceProxy implements InvocationHandler {
             if (CollUtil.isEmpty(serviceMetaInfoList)) {
                 throw new RuntimeException("未找到服务提供者");
             }
-            ServiceMetaInfo selectedService = serviceMetaInfoList.get(0);
+
+            // 负载均衡
+            LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(rpcConfig.getLoadBalancer());
+            // 将调用方法名作为负载均衡参数
+            Map<String, Object> requestParams = new HashMap<>();
+            requestParams.put("methodName", method.getName());
+            ServiceMetaInfo selectedService = loadBalancer.select(requestParams, serviceMetaInfoList);
             // 发送 TCP 请求
             RpcResponse rpcResponse = VertxTcpClient.doRequest(rpcRequest, selectedService);
             return rpcResponse.getData();

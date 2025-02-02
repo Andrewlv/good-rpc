@@ -1,0 +1,2 @@
+no=com.andrew.goodrpc.fault.retry.NoRetryStrategy
+fixedInterval=com.andrew.goodrpc.fault.retry.FixedIntervalRetryStrategy

@@ -1,5 +1,6 @@
 package com.andrew.goodrpc.config;
 
+import com.andrew.goodrpc.fault.retry.RetryStrategyKeys;
 import com.andrew.goodrpc.loadbalancer.LoadBalancerKeys;
 import com.andrew.goodrpc.serializer.SerializerKeys;
 import lombok.Data;
@@ -45,6 +46,14 @@ public class RpcConfig {
      */
     private RegistryConfig registryConfig = new RegistryConfig();
 
+    /**
+     * 负载均衡器
+     */
     private String loadBalancer = LoadBalancerKeys.ROUND_ROBIN;
+
+    /**
+     * 重试策略
+     */
+    private String retryStrategy = RetryStrategyKeys.NO;
 
 }

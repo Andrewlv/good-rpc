@@ -1,6 +1,7 @@
 package com.andrew.goodrpc.config;
 
 import com.andrew.goodrpc.fault.retry.RetryStrategyKeys;
+import com.andrew.goodrpc.fault.tolerant.TolerantStrategyKeys;
 import com.andrew.goodrpc.loadbalancer.LoadBalancerKeys;
 import com.andrew.goodrpc.serializer.SerializerKeys;
 import lombok.Data;
@@ -56,4 +57,8 @@ public class RpcConfig {
      */
     private String retryStrategy = RetryStrategyKeys.NO;
 
+    /**
+     * 容错策略
+     */
+    private String tolerantStrategy = TolerantStrategyKeys.FAIL_FAST;
 }

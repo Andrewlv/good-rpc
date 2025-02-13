@@ -1,0 +1,4 @@
+failBack=com.andrew.goodrpc.fault.tolerant.FailBackTolerantStrategy
+failFast=com.andrew.goodrpc.fault.tolerant.FailFastTolerantStrategy
+failOver=com.andrew.goodrpc.fault.tolerant.FailOverTolerantStrategy
+failSafe=com.andrew.goodrpc.fault.tolerant.FailSafeTolerantStrategy

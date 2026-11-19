@@ -47,7 +47,8 @@ public class EtcdRegistry implements Registry {
     @Override
     public void init(RegistryConfig registryConfig) {
 
-        Client.builder().endpoints(registryConfig.getAddress()).connectTimeout(Duration.ofMillis(registryConfig.getTimeout())).build();
+        // 创建并持有 etcd 客户端（此前未赋值，首次调用注册中心操作会抛出 NPE）
+        client = Client.builder().endpoints(registryConfig.getAddress()).connectTimeout(Duration.ofMillis(registryConfig.getTimeout())).build();
         kvClient = client.getKVClient();
         heartBeat();
     }

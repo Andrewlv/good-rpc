@@ -91,8 +91,8 @@ public class ServiceProxy implements InvocationHandler {
                     VertxTcpClient.doRequest(rpcRequest, selectedService)
             );
         } catch (Exception e) {
-            // 容错机制
-            TolerantStrategy tolerantStrategy = TolerantStrategyFactory.getInstance(rpcConfig.getRetryStrategy());
+            // 容错机制（注意：容错策略应使用 tolerantStrategy 配置，而非重试策略配置）
+            TolerantStrategy tolerantStrategy = TolerantStrategyFactory.getInstance(rpcConfig.getTolerantStrategy());
             rpcResponse = tolerantStrategy.doTolerant(null, e);
         }
         return rpcResponse.getData();

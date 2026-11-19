@@ -38,6 +38,8 @@ public class VertxTcpClient {
                 result -> {
                     if (!result.succeeded()) {
                         System.err.println("Failed to connect to TCP server");
+                        // 连接失败时必须结束 future，让异常传给调用方的重试/容错机制，否则会一直阻塞
+                        responseFuture.completeExceptionally(new RuntimeException("Failed to connect to TCP server", result.cause()));
                         return;
                     }
                     NetSocket socket = result.result();
@@ -59,7 +61,8 @@ public class VertxTcpClient {
                         Buffer encodeBuffer = ProtocolMessageEncoder.encode(protocolMessage);
                         socket.write(encodeBuffer);
                     } catch (Exception e) {
-                        throw new RuntimeException("协议消息编码错误");
+                        // 在事件循环回调里抛出的异常不会传给 responseFuture.get()，必须显式结束 future
+                        responseFuture.completeExceptionally(new RuntimeException("协议消息编码错误", e));
                     }
 
                     // 接收响应
@@ -70,16 +73,22 @@ public class VertxTcpClient {
                                             (ProtocolMessage<RpcResponse>) ProtocolMessageDecoder.decode(buffer);
                                     responseFuture.complete(rpcResponseProtocolMessage.getBody());
                                 } catch (IOException e) {
-                                    throw new RuntimeException("协议消息解码错误");
+                                    // 解码失败同样通过 future 传递异常，避免调用方无限阻塞
+                                    responseFuture.completeExceptionally(new RuntimeException("协议消息解码错误", e));
                                 }
                             }
                     );
                     socket.handler(bufferHandlerWrapper);
                 });
 
-        RpcResponse rpcResponse = responseFuture.get();
-        // 记得关闭连接
-        netClient.close();
+        RpcResponse rpcResponse;
+        try {
+            rpcResponse = responseFuture.get();
+        } finally {
+            // 无论成功失败，都要释放本次请求创建的连接和 Vert.x 实例（不关闭 vertx 会泄漏事件循环线程）
+            netClient.close();
+            vertx.close();
+        }
         return rpcResponse;
     }
 }

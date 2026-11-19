@@ -152,7 +152,7 @@ cd ../example-common && mvn clean install
 
 ### 2. Start etcd (full path only)
 
-`RegistryTest` expects etcd's client port on `localhost:2379`, and the default `RegistryConfig` address is `http://localhost:2380` — so set it explicitly in the example's `src/main/resources/application.properties`:
+`RegistryTest` expects etcd's client port on `localhost:2379`, which is also the default `RegistryConfig` address — set it explicitly in the example's `src/main/resources/application.properties` only if your etcd lives elsewhere:
 
 ```properties
 rpc.name=goodrpc
@@ -248,7 +248,7 @@ For example, register a serializer with key `protobuf` in `com.andrew.goodrpc.se
 | `rpc.retryStrategy` | `no` | `no` · `fixedInterval` |
 | `rpc.tolerantStrategy` | `failFast` | `failFast` · `failOver` · `failBack` · `failSafe` |
 | `rpc.registryConfig.registry` | `etcd` | Registry type (SPI key) |
-| `rpc.registryConfig.address` | `http://localhost:2380` | etcd endpoint |
+| `rpc.registryConfig.address` | `http://localhost:2379` | etcd endpoint (client port) |
 | `rpc.registryConfig.timeout` | `50000` | Connect timeout (ms) |
 
 </details>
@@ -257,11 +257,12 @@ For example, register a serializer with key `protobuf` in `com.andrew.goodrpc.se
 
 Honest status of the current tree — read before running the examples:
 
-1. **Registry default port is etcd's peer port** — `RegistryConfig` defaults to `:2380`; point it at the client port (`:2379`) as shown in Quick Start.
-2. **ConsistentHash ring accumulates** — `ConsistentHashLoadBalancer.select()` adds virtual nodes on every call without clearing the ring first; fine for reading, worth fixing before benchmarking.
-3. **Consumer hangs on TCP connect failure** — `VertxTcpClient` doesn't complete its `responseFuture` when the connect itself fails, so the caller blocks instead of falling through to the tolerant strategy.
+1. **No response timeout** — `VertxTcpClient` waits on its response future without a deadline; a provider that accepts the TCP connection but never answers (e.g. one running an older build of the server) still blocks the consumer indefinitely. Retry/tolerant strategies only engage once a call actually *fails*.
+2. **Server-side errors surface as `null`** — the consumer-side `ServiceProxy` returns `rpcResponse.getData()` without checking `rpcResponse.getException()`/`message`, so a failed remote invoke looks like a `null` result instead of an error.
+3. **Easy examples resolve classes by classpath order** — `Easy*Example` lives in modules that depend on `good-rpc-core` only, while both framework generations share the same `com.andrew.goodrpc` package names; the "easy" flow only runs against `good-rpc-easy` if its classes come first on the classpath.
+4. **No root aggregator POM** — modules must be built in dependency order (`good-rpc-core` → `example-common` → `example-provider`/`example-consumer`).
 
-> ✅ Recently fixed in this repo: `EtcdRegistry` retains its jetcd client (no more startup NPE), `VertxTcpServer` decodes requests, invokes locally and writes framed responses back (framing now mirrors the consumer's), and `ServiceProxy` passes the correct key to `TolerantStrategyFactory`, making the fault-tolerance layer reachable.
+> ✅ Recently fixed in this repo: `EtcdRegistry` retains its jetcd client (no more startup NPE), `VertxTcpServer` decodes requests, invokes locally and writes framed responses back (framing now mirrors the consumer's), and `ServiceProxy` passes the correct key to `TolerantStrategyFactory`, making the fault-tolerance layer reachable. Also fixed: `RegistryConfig` now defaults to etcd's client port `:2379`, `ConsistentHashLoadBalancer` clears its virtual-node ring at the start of every `select()` so it always reflects the current instance list, and `VertxTcpClient` completes its future exceptionally on connect/encode/decode errors (so failures fall through to retry/tolerant instead of hanging) and closes its per-request `NetClient`/`Vertx` in a `finally` block.
 
 ## 🧪 Tests
 
@@ -269,7 +270,7 @@ Honest status of the current tree — read before running the examples:
 cd good-rpc-core && mvn test
 ```
 
-`src/test` covers the protocol encode/decode round-trip, retry strategies, load balancers, and the etcd registry (`RegistryTest` needs a live etcd on `localhost:2379` — and fix #1 above).
+`src/test` covers the protocol encode/decode round-trip, retry strategies, load balancers, and the etcd registry (`RegistryTest` needs a live etcd on `localhost:2379`).
 
 ## 🤝 Acknowledgments
 

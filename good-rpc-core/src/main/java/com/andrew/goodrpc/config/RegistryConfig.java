@@ -14,9 +14,9 @@ public class RegistryConfig {
     private String registry = "etcd";
 
     /**
-     * 注册中心地址
+     * 注册中心地址（etcd 客户端端口是 2379；2380 是集群内部通信的 peer 端口）
      */
-    private String address = "http://localhost:2380";
+    private String address = "http://localhost:2379";
 
     /**
      * 用户名

@@ -23,6 +23,8 @@ public class ConsistentHashLoadBalancer implements LoadBalancer {
         if (serviceMetaInfoList.isEmpty()) {
             return null;
         }
+        // 先清空上一轮的旧环，再按当前服务列表重建，避免多次调用时节点不断累积（含已下线的残留节点）
+        virtualNodes.clear();
         // 构建虚拟节点环
         for (ServiceMetaInfo serviceMetaInfo : serviceMetaInfoList) {
             for (int i = 0; i < VIRTUAL_NODE_COUNT; i++) {
